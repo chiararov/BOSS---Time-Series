@@ -18,7 +18,7 @@ mean = False
 # Algo 1
 
 
-def BOSSTransform(sample, w, l, c, mean=False):
+def BOSSTransform(sample, w, l, c, mean):
     words = window_to_word(sample, w, l, c, mean)
     unique_words = np.unique(words)
     boss = {value: 0 for value in unique_words}
@@ -31,22 +31,40 @@ def BOSSTransform(sample, w, l, c, mean=False):
 
 
 def sliding_windows(sample, w):
+    'returns list of the n-w sliding windows of length w of a signal'
     n = len(sample)
     s = []
     for i in range(n-w):
         s.append(sample[i:i+w])
-    return s
+    std=np.std(s) #normalisation
+    return s/std
 
 
-def DFT(sample, l, mean=False):
+def DFT(sample, l, mean):
     n = len(sample)
     dft = []
     if mean:
-        start = 0
-    else:
-        start = 1
+        sample=sample-np.mean(sample)
     num = int(round(l/2))
-    for u in range(start, num+start):
+    for u in range(num):
+        xu = (1/n) * sum(sample[x]*np.exp(- 2j * np.pi*u*x/n)
+                         for x in range(n))
+        dft.append(xu.real)
+        dft.append(xu.imag)
+    return dft
+
+def DFT(sample,w, l, mean):
+    'returns the matrix A for which each lign i is the DFT of the window i of a signal'
+    windows=sliding_windows(sample,w)
+    n = len(sample)
+    A=np.zeros((n,l))
+    v=np.exp(- 2j * np.pi * np.arange(l) /n)
+    V=np.diag(v)
+    if mean:
+        sample=sample-np.mean(sample)
+    
+    num = int(round(l/2))
+    for u in range(num):
         xu = (1/n) * sum(sample[x]*np.exp(- 2j * np.pi*u*x/n)
                          for x in range(n))
         dft.append(xu.real)
