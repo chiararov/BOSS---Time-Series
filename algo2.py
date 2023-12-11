@@ -4,7 +4,7 @@ import numpy as np
 from algo1 import BOSSTransform
 
 w = 5
-l = 2
+l = 4
 c = 2
 mean = False
 
