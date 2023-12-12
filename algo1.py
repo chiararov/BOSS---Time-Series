@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-
+import random as rd
 # Import Data
 path = 'StarLightCurves/StarLightCurves_TRAIN.txt'
 data_with_label = pd.read_fwf(path, header=None)
@@ -53,29 +53,43 @@ def DFT(sample, l, mean):
         dft.append(xu.imag)
     return dft
 
-def DFT(sample,w, l, mean):
+def DFT_A(sample,w, l, mean):
     'returns the matrix A for which each lign i is the DFT of the window i of a signal'
-    windows=sliding_windows(sample,w)
-    n = len(sample)
-    A=np.zeros((n,l))
-    v=np.exp(- 2j * np.pi * np.arange(l) /n)
-    V=np.diag(v)
     if mean:
         sample=sample-np.mean(sample)
-    
+
     num = int(round(l/2))
+    windows=sliding_windows(sample,w)
+    n = len(sample)
+
+    v=np.exp( 2j * np.pi * np.arange(num) /n)
+    V=np.diag(v)
+    
+    dft0=[]
     for u in range(num):
-        xu = (1/n) * sum(sample[x]*np.exp(- 2j * np.pi*u*x/n)
-                         for x in range(n))
-        dft.append(xu.real)
-        dft.append(xu.imag)
-    return dft
+        xu = (1/w) * sum(sample[x]*np.exp(- 2j * np.pi*u*x/w)
+                         for x in range(w))
+        dft0.append(xu)
+
+    A=np.array(dft0)
+    A=A[np.newaxis,:]
+    newcol=np.zeros((1,num))
+    for i in range(1,n-w):
+        diff=np.ones((1,num))*(sample[i+w]-sample[i])
+        newcol= np.dot(A[i-1,:]+diff,V)
+        A=np.vstack((A,newcol))
+    
+    B= np.zeros((A.shape[0],2*num))
+    B[:, 0::2] = A.real
+    B[:, 1::2] = A.imag
+    return B
 
 
 def MCB(sample, w, l, c, mean):
     windows = sliding_windows(sample, w)
-    A = [DFT(window, l, mean)for window in windows]
-    A = np.array(A)
+    # A = [DFT(window, l, mean)for window in windows]
+    # A = np.array(A)
+    A=DFT_A(sample,w,l,mean)
     n, l = A.shape
 
     breakpoints = []
@@ -112,7 +126,7 @@ def plot_hist(n):
     fig, axs = plt.subplots(n, 2, figsize=(10, 8))
     colors = plt.cm.viridis(np.linspace(0, 1, n))
     for i in range(n):
-        sample = data_without_label.iloc[i]  # first sample of length 1024
+        sample = data_without_label.iloc[rd.randint(0,len(data_without_label))]  # first sample of length 1024
         sample = sample.tolist()
         boss = BOSSTransform(sample, w, l, c, mean)
         labels = list(boss.keys())
